@@ -3,88 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Whiteboard</title>
+    <title>Relaxing Clock and Chat</title>
     <style>
-        body, html {
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
             display: flex;
             flex-direction: column;
+            align-items: center;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
         }
-        #controls {
-            display: flex;
+
+        .clock-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #clock {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .chat-container {
+            width: 100%;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
+        .chat-box {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             padding: 10px;
-            background-color: #333;
+            background-color: #fafafa;
+            margin-bottom: 10px;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        #name-input, #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4a90e2;
             color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
-        #controls label {
-            margin-right: 10px;
-        }
-        #controls input[type="color"],
-        #controls input[type="range"] {
-            margin-right: 20px;
-        }
-        canvas {
-            flex-grow: 1;
-            cursor: crosshair;
-            background-color: #f0f0f0;
+
+        button:hover {
+            background-color: #357ABD;
         }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <label for="colorPicker">Color:</label>
-        <input type="color" id="colorPicker" value="#000000">
-        <label for="brushSize">Brush Size:</label>
-        <input type="range" id="brushSize" min="1" max="50" value="5">
+    <div class="container">
+        <div class="clock-container">
+            <h1>Relaxing Clock</h1>
+            <div id="clock"></div>
+        </div>
+
+        <div class="chat-container">
+            <h2>Chat</h2>
+            <div class="chat-box" id="chat-box"></div>
+            <div class="chat-input">
+                <input type="text" id="name-input" placeholder="Enter your name">
+                <input type="text" id="message-input" placeholder="Type a message">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
     </div>
-    <canvas id="whiteboard"></canvas>
 
     <script>
-        const canvas = document.getElementById('whiteboard');
-        const ctx = canvas.getContext('2d');
-        const colorPicker = document.getElementById('colorPicker');
-        const brushSize = document.getElementById('brushSize');
-        
-        canvas.width = window.innerWidth * 3;
-        canvas.height = window.innerHeight * 3;
+        function updateClock() {
+            const now = new Date();
+            const estOffset = -5; // EST is UTC-5
+            const estTime = new Date(now.getTime() + (estOffset * 60 * 60 * 1000));
+            const hours = String(estTime.getHours()).padStart(2, '0');
+            const minutes = String(estTime.getMinutes()).padStart(2, '0');
+            const seconds = String(estTime.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
 
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
+        function sendMessage() {
+            const name = document.getElementById('name-input').value.trim();
+            const message = document.getElementById('message-input').value.trim();
+            if (name && message) {
+                const chatBox = document.getElementById('chat-box');
+                const messageElement = document.createElement('div');
+                messageElement.textContent = `${name}: ${message}`;
+                chatBox.appendChild(messageElement);
+                document.getElementById('message-input').value = '';
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
+                saveMessage(name, message);
+            }
+        }
 
-        canvas.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-            [lastX, lastY] = [e.offsetX, e.offsetY];
-        });
+        function saveMessage(name, message) {
+            const chatMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+            chatMessages.push({ name, message });
+            localStorage.setItem('chatMessages', JSON.stringify(chatMessages));
+        }
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return;
-            ctx.strokeStyle = colorPicker.value;
-            ctx.lineWidth = brushSize.value;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(e.offsetX, e.offsetY);
-            ctx.stroke();
-            [lastX, lastY] = [e.offsetX, e.offsetY];
-        });
+        function loadMessages() {
+            const chatMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+            const chatBox = document.getElementById('chat-box');
+            chatMessages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.textContent = `${msg.name}: ${msg.message}`;
+                chatBox.appendChild(messageElement);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
+        }
 
-        canvas.addEventListener('mouseup', () => isDrawing = false);
-        canvas.addEventListener('mouseout', () => isDrawing = false);
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') window.scrollBy(0, -50);
-            if (e.key === 'ArrowDown') window.scrollBy(0, 50);
-            if (e.key === 'ArrowLeft') window.scrollBy(-50, 0);
-            if (e.key === 'ArrowRight') window.scrollBy(50, 0);
-        });
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth * 3;
-            canvas.height = window.innerHeight * 3;
-        });
+        // Initialize clock and chat
+        updateClock();
+        setInterval(updateClock, 1000); // Update clock every second
+        loadMessages();
     </script>
 </body>
 </html>
