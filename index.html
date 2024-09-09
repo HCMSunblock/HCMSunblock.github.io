@@ -147,6 +147,16 @@
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+                function resetChat() {
+            localStorage.removeItem('chatMessages'); // Clear saved messages
+            loadMessages(); // Clear chatbox display
+        }
+
+        // Refresh the chat every second
+        setInterval(loadMessages, 1000);
+
+        // Reset chat every hour
+        setInterval(resetChat, 3600000); // 3600000 ms = 1 hour
 
         updateClock();
         setInterval(updateClock, 1000);
